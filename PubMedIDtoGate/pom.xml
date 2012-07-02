@@ -44,7 +44,6 @@
 			<artifactId>commons-collections</artifactId>
 			<version>3.0</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
@@ -96,11 +95,6 @@
 			<groupId>umls</groupId>
 			<artifactId>mmtx</artifactId>
 			<version>2.4C</version>
-		</dependency>
-		<dependency>
-			<groupId>baseCode</groupId>
-			<artifactId>baseCode</artifactId>
-			<version>1.0.11-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.hp.hpl.jena</groupId>
