@@ -1,0 +1,14 @@
+#Fat Jar Configuration File
+#Tue Feb 03 13:32:17 PST 2009
+onejar.license.required=true
+manifest.classpath=
+manifest.removesigners=true
+onejar.checkbox=false
+jarname=WhiteText.jar
+manifest.mergeall=false
+manifest.mainclass=
+manifest.file=<createnew>
+jarname.isextern=false
+onejar.expand=
+excludes=<po|BAMSandAllen>;<cl|/grp/java/workspace/BAMSandAllen/log4j>;<po|baseCode>;<po|GEOMMTx>;<po|Gemma>;<po|baseCode>;<po|GATE2>;<po|GEOMMTx>;<po|Mallet>;<jar|acegi-security-1.0.3.jar>;<jar|asm-1.5.3.jar>;<jar|asm-attrs-1.5.3.jar>;<jar|mmtxProjectJS.jar>
+includes=<inc|baseCode/src>~ubic/;<inc|baseCode/src>~CVS/;<inc|baseCode/src>~.cvsignore

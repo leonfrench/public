@@ -1,0 +1,26 @@
+#reveal unmatched ones
+#sort terms by count
+
+PREFIX fn: <http://www.w3.org/2005/xpath-functions#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX neuroLinks: <http://www.chibi.ubc.ca/Gemma/ws/xml/neuroanatomyLinks.owl#>
+SELECT DISTINCT ?mentionlabel $count ?termlabel ?neuroConcept
+WHERE {
+   ?neuromention neuroLinks:number_of_occurances $count .
+   ?neuromention rdfs:label ?mentionlabel .
+
+   #get its link to a match if any
+   optional { 
+      ?neuromention ?matchlink ?neuroterm . 
+      ?neuroterm rdf:type neuroLinks:neuroterm .
+      ?neuroterm rdfs:label ?termlabel .
+
+      #find the birnlex of NN ID it links to
+      ?neuroConcept ?lexlink ?neuroterm . 
+      ?neuroConcept rdf:type ?concepttype .
+      ?concepttype rdfs:subClassOf neuroLinks:neuroOntologyEntry .
+   }
+}
+ORDER BY $count

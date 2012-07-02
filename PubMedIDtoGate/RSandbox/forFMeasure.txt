@@ -1,0 +1,8 @@
+filename <- "FMeasures.UnionMerge.Mallet.TreeTaggerGATETokens.txt.csv"
+filename <- "Docs.txt.csv"
+x <- read.table(filename)
+x <- as.numeric(x[,2])
+hist(x, breaks=100)
+png(paste(filename, ".hist.png", sep=""))
+hist(x, breaks=100)
+dev.off()

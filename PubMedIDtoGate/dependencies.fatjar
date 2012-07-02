@@ -1,0 +1,14 @@
+#Fat Jar Configuration File
+#Tue Jan 18 15:45:19 PST 2011
+onejar.license.required=true
+manifest.classpath=
+manifest.removesigners=true
+onejar.checkbox=false
+jarname=WhiteTextDeps.jar
+manifest.mergeall=false
+manifest.mainclass=
+manifest.file=<createnew>
+jarname.isextern=false
+onejar.expand=
+excludes=<po|PubMedIDtoGate>;<po|Gemma>~log4j.properties;<po|baseCode>~log4j.properties
+includes=<inc|baseCode/src>~ubic/;<inc|baseCode/src>~CVS/;<inc|baseCode/src>~.cvsignore

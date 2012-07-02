@@ -1,0 +1,9 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX neuroLinks: <http://www.chibi.ubc.ca/Gemma/ws/xml/neuroanatomyLinks.owl#>
+SELECT ?BIRNLabel ?NNLabel ?NN
+WHERE {
+   ?BIRN neuroLinks:has_NN_link ?NN .
+   ?BIRN rdfs:label ?BIRNLabel .
+   optional { ?NN rdfs:label ?NNLabel . }
+}

@@ -1,0 +1,11 @@
+bin
+target
+.metadata
+.class
+.externalToolBuilders
+WhiteText.jar
+
+# Package Files #
+*.jar
+*.war
+*.ear

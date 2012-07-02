@@ -1,0 +1,24 @@
+'insert this code into the spreadsheet by right clicking on the sheet and going to view code, then paste it in and save
+
+Option Explicit
+
+Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+Dim iOffset As Integer
+On Error GoTo err_handler
+Application.EnableEvents = False
+If Not Application.Intersect(Target, Columns("C:E")) Is Nothing Then
+ 'X is placed in the 4th or "d" column
+ iOffset = 4 - Target.Column
+ If Target.Offset(0, iOffset).Value = "X" Then
+   Target.Offset(0, iOffset).Value = ""
+ Else
+   Target.Offset(0, iOffset).Value = "X"
+ End If
+End If
+err_handler:
+Application.EnableEvents = True
+End Sub
+
+
+
+
