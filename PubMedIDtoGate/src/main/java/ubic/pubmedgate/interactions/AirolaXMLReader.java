@@ -74,7 +74,7 @@ public class AirolaXMLReader {
         pairIDToSentenceElementID = new HashMap<String, String>();
         pairIDToAbstractElementID = new HashMap<String, String>();
         sentenceIDToEntities = new StringToStringSetMap();
-        sentenceIDToPairs =  new StringToStringSetMap();
+        sentenceIDToPairs = new StringToStringSetMap();
         sentenceIDToText = new HashMap<String, String>();
         entityIDtoText = new HashMap<String, String>();
         PMIDs = new HashSet<String>();
@@ -119,6 +119,9 @@ public class AirolaXMLReader {
             PMIDs.add( PMID );
 
             ConnectionsDocument GATEdoc = p2g.getByPMID( PMID );
+            if ( GATEdoc == null ) {
+                log.info( PMID + " pmid not loaded from corpus" );
+            }
 
             AnnotationSet sentenceSet = GATEdoc.getAnnotations( GATEdoc.GATETOKENS );
 

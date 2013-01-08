@@ -27,14 +27,14 @@ public class ForRecallEvaluationSchema extends SpreadSheetSchema {
         int c = 0;
         positions.put( "sentence", c++ ); // a
         positions.put( "LinkToAbstract", c++ ); // b
-        positions.put( "Accept", c++ ); // c
+        positions.put( "Reject", c++ ); // c
         positions.put( "Previous Annotation", c++ ); // d
-        positions.put( "New sentence", c++ ); // g
-        positions.put( "Named entity error", c++ ); // g
-        positions.put( "Abbreviation error", c++ ); // h
-        positions.put( "Ambiguous", c++ ); // i
-        positions.put( "Comment", c++ ); // j
-        positions.put( "PairID", c++ ); // k
+        positions.put( "New sentence", c++ ); // e
+        positions.put( "Named entity error", c++ ); // f
+        positions.put( "Abbreviation error", c++ ); // g
+        positions.put( "Ambiguous", c++ ); // h
+        positions.put( "Comment", c++ ); // i
+        positions.put( "PairID", c++ ); // j
         positions.put( "PMID", c++ ); // l
         // not always used
         positions.put( "RegionAName", c++ ); // m
@@ -47,6 +47,6 @@ public class ForRecallEvaluationSchema extends SpreadSheetSchema {
         positions.put( "Direction", c++ );
         positions.put( "Prediction", c++ );
         // DUPE!
-//        positions.put( "Previous Annotation", c++ );
+        // positions.put( "Previous Annotation", c++ );
     }
 }

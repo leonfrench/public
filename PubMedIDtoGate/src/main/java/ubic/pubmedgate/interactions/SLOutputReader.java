@@ -37,6 +37,7 @@ import org.apache.commons.logging.LogFactory;
 import ubic.BAMSandAllen.Util;
 import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
 import ubic.basecode.dataStructure.matrix.DoubleMatrix;
+import ubic.pubmedgate.Config;
 import au.com.bytecode.opencsv.CSVReader;
 
 public class SLOutputReader {
@@ -46,6 +47,17 @@ public class SLOutputReader {
     File baseFolder;
     Map<String, Double> scores;
     Map<String, Double> truth;
+
+    // requires properly named set
+    public static SLOutputReader getCCSLReader( String testSet ) throws Exception {
+        String trainingSet = "WhiteTextNegFixFull";
+
+        String baseFolder = Config.config.getString( "whitetext.iteractions.ppiBaseFolder" )
+                + "Saved Results/SL/CC/NegFixFullOn" + testSet + "/";
+
+        SLOutputReader SLReader = new SLOutputReader( trainingSet, testSet, baseFolder );
+        return SLReader;
+    }
 
     public Map<String, Double> getScores() {
         return scores;
@@ -128,7 +140,7 @@ public class SLOutputReader {
             matrix.setByKeys( pair, "prediction", scores.get( pair ) );
             matrix.setByKeys( pair, "label", truth.get( pair ) );
         }
-        Util.writeRTable( baseFolder + "/predictionsForR.txt", matrix );
+        Util.writeRTable( baseFolder + System.getProperty( "file.separator" ) + "predictionsForR.txt", matrix );
     }
 
     public List<String> getTrueNegatives() {
@@ -182,7 +194,7 @@ public class SLOutputReader {
             double score = Double.parseDouble( predictionStringScore );
             scores.put( pairID, score );
 
-            // assume all false
+            // assume all false - for uncurated data
             truth.put( pairID, 0d );
 
         }

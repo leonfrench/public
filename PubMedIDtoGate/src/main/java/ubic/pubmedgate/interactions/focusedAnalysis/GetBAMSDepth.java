@@ -39,7 +39,7 @@ public class GetBAMSDepth {
 
         // only use connected regions!!
         Direction direction = Direction.ANYDIRECTION;
-        DoubleMatrix<String, String> BAMSconnectionMatrix = NormalizePairs.getConnectionMatrix( true, direction );
+        DoubleMatrix<String, String> BAMSconnectionMatrix = NormalizePairs.getBAMSConnectionMatrix( true, direction );
 
         ABAMSDataMatrix BAMSMatrix = new ABAMSDataMatrix( BAMSconnectionMatrix, "BAMSconnectionMatrix",
                 new IdentityAdjacency( BAMSconnectionMatrix ) );

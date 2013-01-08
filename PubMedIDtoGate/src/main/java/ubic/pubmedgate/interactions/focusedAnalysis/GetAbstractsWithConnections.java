@@ -58,7 +58,7 @@ public class GetAbstractsWithConnections {
                 + "Corpora/Original-Modified/WhiteTextUnseen.orig.xml";
         AirolaXMLReader reader = new AirolaXMLReader( corpusFilename, p2g, annotationSet );
         boolean useAll = true;
-        AirolaForEvaluations test = new AirolaForEvaluations( reader, sheet, useAll );
+        AirolaForEvaluations test = new AirolaForEvaluations( reader );
         FileTools.stringsToFile( test.getAbstractsWithConnectionsIDs(),
                 Config.config.getString( "whitetext.iteractions.results.folder" ) + "Eval2000ConIDs.txt" );
 

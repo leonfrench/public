@@ -19,7 +19,6 @@
 
 package ubic.pubmedgate.interactions.focusedAnalysis;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,72 +35,85 @@ import ubic.pubmedgate.Config;
 import ubic.pubmedgate.ConnectionsDocument;
 import ubic.pubmedgate.GateInterface;
 import ubic.pubmedgate.interactions.AirolaXMLReader;
-import ubic.pubmedgate.interactions.NormalizePairs;
-import ubic.pubmedgate.interactions.NormalizeResult;
 import ubic.pubmedgate.interactions.SLOutputReader;
 import ubic.pubmedgate.interactions.evaluation.AllCuratorsCombined;
+import ubic.pubmedgate.interactions.evaluation.AllUnseenEvaluationsCombined;
 import ubic.pubmedgate.interactions.evaluation.LoadInteractionSpreadsheet;
-import ubic.pubmedgate.interactions.evaluation.NormalizedConnection;
+import ubic.pubmedgate.organism.SpeciesLoader;
 import ubic.pubmedgate.organism.SpeciesUtil;
 
 public class SplitConnectionsBySpecies {
     protected static Log log = LogFactory.getLog( SplitConnectionsBySpecies.class );
+    GateInterface p2g;
+    SpeciesLoader filterLoader;
+    Set<String> filtered;
 
-    public static void getCounts() throws Exception {
-        // String testSet = "Annotated";
-        // String annotationSet = "Suzanne";
-        //
-        // String baseFolder = Config.config.getString( "whitetext.iteractions.ppiBaseFolder" )
-        // + "Saved Results/SL/CV/WhiteTextNegFixFull/predict/WhiteTextNegFixFull";
-        // String filename = Config.config.getString( "whitetext.iteractions.ppiBaseFolder" )
-        // + "Corpora/Original-Modified/WhiteTextNegFixFull.xml";
-        //
-        // GateInterface p2g = new GateInterface();
-        // p2g.setUnSeenCorpNull();
-        //
-        // AirolaXMLReader XMLReader = new AirolaXMLReader( filename, p2g, annotationSet );
-        // SLOutputReader SLReader = new SLOutputReader( new File( baseFolder ) );
-        String trainingSet = "WhiteTextNegFixFull";
+    public SplitConnectionsBySpecies() throws Exception {
+        p2g = new GateInterface();
+        p2g.setNamedCorpNull( "PubMedUnseenJNChem" );
+
+        filterLoader = new SpeciesLoader();
+        filtered = filterLoader.getFilteredIDs();
+    }
+
+    public CountingMap<String> getSpeciesConCount( String testSet ) throws Exception {
+        AirolaXMLReader XMLReader = getXMLReader( testSet );
+        SLOutputReader SLReader = SLOutputReader.getCCSLReader( testSet );
+        return getSpeciesConCount( SLReader, XMLReader );
+    }
+
+    public CountingMap<String> getSpeciesConCount( SLOutputReader reader, AirolaXMLReader XMLReader ) {
+
+        Map<String, String> pairIDtoPMID = XMLReader.getPairIDToPMID();
+        CountingMap<String> speciesConCount = new CountingMap<String>();
+        List<String> posPredictions = reader.getPositivePredictions();
+        for ( String pairID : posPredictions ) {
+            String PMID = pairIDtoPMID.get( pairID );
+            ConnectionsDocument doc = p2g.getByPMID( PMID );
+            Set<String> species = doc.getLinnaeusSpecies();
+            species.removeAll( filtered );
+
+            speciesConCount.incrementAll( species );
+        }
+        return speciesConCount;
+
+    }
+
+    public void getCounts2() throws Exception {
         String testSet = "WhiteTextUnseen";
-        String annotationSet = "Mallet";
 
-        String baseFolder = Config.config.getString( "whitetext.iteractions.ppiBaseFolder" )
-                + "Saved Results/SL/CC/NegFixFullOnUnseen/";
-        String filename = Config.config.getString( "whitetext.iteractions.ppiBaseFolder" )
-                + "Corpora/Original-Modified/WhiteTextUnseen.orig.xml";
-
-        GateInterface p2g = new GateInterface();
-
-        AirolaXMLReader XMLReader = new AirolaXMLReader( filename, p2g, annotationSet );
-        SLOutputReader SLReader = new SLOutputReader( trainingSet, testSet, baseFolder );
+        AirolaXMLReader XMLReader = getXMLReader( testSet );
+        SLOutputReader SLReader = SLOutputReader.getCCSLReader( testSet );
 
         Map<String, String> pairIDtoPMID = XMLReader.getPairIDToPMID();
 
         List<String> posPredictions = SLReader.getPositivePredictions();
 
+        CountingMap<String> evaluationRows = new CountingMap<String>();
+        CountingMap<String> evaluationAccepts = new CountingMap<String>();
         CountingMap<String> speciesConCount = new CountingMap<String>();
-        CountingMap<String> final2000Rows = new CountingMap<String>();
-        CountingMap<String> final2000Accepts = new CountingMap<String>();
 
-        LoadInteractionSpreadsheet final2000 = AllCuratorsCombined.getFinal2000Results();
+        CountingMap<String> speciesConCountMScan1 = getSpeciesConCount( "WhiteTextUnseenMScan" );
+        CountingMap<String> speciesConCountMScan2 = getSpeciesConCount( "WhiteTextUnseenMScan2" );
+
+        AllUnseenEvaluationsCombined allCombined = new AllUnseenEvaluationsCombined();
+        Set<String> accepts = allCombined.getAllAcceptedPairs();
+        Set<String> evaluated = allCombined.getAllEvaluatedPairs();
 
         for ( String pairID : posPredictions ) {
             String PMID = pairIDtoPMID.get( pairID );
             ConnectionsDocument doc = p2g.getByPMID( PMID );
             Set<String> species = doc.getLinnaeusSpecies();
+            species.removeAll( filtered );
+
             speciesConCount.incrementAll( species );
 
-            int final2000RowCount = final2000.getPairIDRowCount( pairID );
-            int final2000AcceptCount = final2000.getPairIDAcceptCount( pairID );
+            boolean final2000Accept = accepts.contains( pairID );
+            boolean final2000Contains = evaluated.contains( pairID );
 
-            // ugly, but makes sense, increment the number of rows seen
             for ( String spec : species ) {
-                for ( int i = 0; i < final2000RowCount; i++ ) {
-                    final2000Rows.increment( spec );
-                }
-                for ( int i = 0; i < final2000AcceptCount; i++ ) {
-                    final2000Accepts.increment( spec );
-                }
+                if ( final2000Accept ) evaluationAccepts.increment( spec );
+                if ( final2000Contains ) evaluationRows.increment( spec );
             }
         }
         log.info( "Pos predictions:" + posPredictions.size() );
@@ -117,24 +129,38 @@ public class SplitConnectionsBySpecies {
             if ( speciesText == null ) speciesText = new HashSet<String>();
             result.put( "species text", speciesText.toString() );
             result.put( "connection count", "" + speciesConCount.get( specieID ) );
-            result.put( "final2000RowCount", "" + final2000Rows.get( specieID ) );
-            result.put( "final2000AcceptCount", "" + final2000Accepts.get( specieID ) );
+            result.put( "MSCAN 1 connection count", "" + speciesConCountMScan1.get( specieID ) );
+            result.put( "MSCAN 2 connection count", "" + speciesConCountMScan2.get( specieID ) );
+            result.put( "EvaluationRowCount", "" + evaluationRows.get( specieID ) );
+            result.put( "EvaluationAcceptCount", "" + evaluationAccepts.get( specieID ) );
 
             keeper.addParamInstance( result );
         }
         keeper.writeExcel( Config.config.getString( "whitetext.iteractions.results.folder" )
-                + "connectionsBySpecies.xls" );
-        log.info( Config.config.getString( "whitetext.iteractions.results.folder" ) + "connectionsBySpecies.xls" );
+                + "connectionsBySpecies.2.xls" );
+        log.info( Config.config.getString( "whitetext.iteractions.results.folder" ) + "connectionsBySpecies.2.xls" );
         // p2g.get
-
     }
 
+    private AirolaXMLReader getXMLReader( String testSet ) throws Exception {
+        String annotationSet = "Mallet";
+        String filename = Config.config.getString( "whitetext.iteractions.ppiBaseFolder" )
+                + "Corpora/Original-Modified/" + testSet + ".orig.xml";
+        AirolaXMLReader XMLReader = new AirolaXMLReader( filename, p2g, annotationSet );
+        return XMLReader;
+    }
 
     /**
      * @param args
      */
     public static void main( String[] args ) throws Exception {
-        getCounts();
+        AllUnseenEvaluationsCombined test = new AllUnseenEvaluationsCombined();
+
+        log.info( "Evaluated:" + test.getAllEvaluatedPairs().size() );
+        log.info( "Accepted:" + test.getAllAcceptedPairs().size() );
+
+        SplitConnectionsBySpecies splitter = new SplitConnectionsBySpecies();
+        splitter.getCounts2();
     }
 
 }

@@ -19,6 +19,7 @@
 
 package ubic.pubmedgate.interactions;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,16 +45,20 @@ public class DuplicateXMLParses {
 
     public static void main( String[] args ) throws Exception {
         DuplicateXMLParses parser;
-//        parser = new DuplicateXMLParses( "WhiteTextUnseen" );
-        parser = new DuplicateXMLParses( "WhiteTextUnseenMScan2" );
+        // parser = new DuplicateXMLParses( "WhiteTextUnseen" );
+        parser = new DuplicateXMLParses( "WhiteTextNegFixFullCountCheck" );
 
-//        parser = new DuplicateXMLParses( "WhiteTextNegFixTrain" );
+        // parser = new DuplicateXMLParses( "WhiteTextNegFixTrain" );
 
     }
 
     public DuplicateXMLParses( String baseName ) throws Exception {
         String filename = Config.config.getString( "whitetext.iteractions.ppiBaseFolder" )
                 + "Corpora/Syntax-Tree-Learning-Format/" + baseName + ".xml";
+        if ( !( new File( filename ) ).exists() ) {
+            log.info( "Cant find file at :" + filename );
+            System.exit( 1 );
+        }
         SAXReader saxReader = new SAXReader();
         Document document = saxReader.read( filename );
         String path;

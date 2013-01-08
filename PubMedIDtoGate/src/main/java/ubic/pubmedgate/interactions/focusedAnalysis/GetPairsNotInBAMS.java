@@ -59,15 +59,15 @@ public class GetPairsNotInBAMS {
         boolean runAll = false;
         boolean notInBAMS = true;
         // gives all positive predicted rat pairs that are normalized in the unseen set
-        
+
         String testSet = "WhiteTextUnseen";
-        NormalizeResult normResult = NormalizePairs.runUnseen( eraTest, runAll, notInBAMS, testSet );
+        NormalizeResult normResult = NormalizePairs.runUnseen( eraTest, runAll, notInBAMS, testSet, NormalizePairs.RAT );
         Set<NormalizedConnection> normalizedPairs = normResult.normalizedPairs;
 
         // check against BAMS
         Direction direction = Direction.ANYDIRECTION;
         boolean propigated = true;
-        DoubleMatrix<String, String> BAMSconnectionMatrix = NormalizePairs.getConnectionMatrix( propigated, direction );
+        DoubleMatrix<String, String> BAMSconnectionMatrix = NormalizePairs.getBAMSConnectionMatrix( propigated, direction );
         Set<NormalizedConnection> pairsNotInBAMS = new HashSet<NormalizedConnection>();
         Set<String> allPairs = new HashSet<String>();
 
@@ -122,13 +122,13 @@ public class GetPairsNotInBAMS {
         // gives all positive predicted rat pairs that are normalized in the unseen set
 
         // below code could be merged with this to save time
-        NormalizeResult normResult = NormalizePairs.analyseTest( usePredictions, eraTest, runAll );
+        NormalizeResult normResult = NormalizePairs.analyseTest( usePredictions, eraTest, runAll, NormalizePairs.RAT );
         Set<NormalizedConnection> normalizedPairs = normResult.normalizedPairs;
 
         // check against BAMS
         Direction direction = Direction.ANYDIRECTION;
         boolean propigated = true;
-        DoubleMatrix<String, String> BAMSconnectionMatrix = NormalizePairs.getConnectionMatrix( propigated, direction );
+        DoubleMatrix<String, String> BAMSconnectionMatrix = NormalizePairs.getBAMSConnectionMatrix( propigated, direction );
         Set<NormalizedConnection> pairsNotInBAMS = new HashSet<NormalizedConnection>();
         Set<String> allPairs = new HashSet<String>();
 

@@ -71,6 +71,10 @@ public class ConnectionList extends LinkedList<Connection> {
         }
     }
 
+    public int getSize() {
+        return size();
+    }
+
     public ConnectionsDocument getDocFromConnection( Connection c ) {
         return conToDocMap.get( c );
     }
@@ -94,6 +98,8 @@ public class ConnectionList extends LinkedList<Connection> {
         for ( int i = 0; i < this.size(); i++ ) {
             for ( int j = 0; j < this.size(); j++ ) {
                 if ( i > j ) {
+                    // TODO add check for same document?
+
                     Connection a = this.get( i );
                     Connection b = this.get( j );
 
@@ -109,9 +115,13 @@ public class ConnectionList extends LinkedList<Connection> {
                 }
             }
         }
-        log.info( "Removed " + toRemove.size() + " connections that were bidirectional duplicates" );
+        if ( toRemove.size() != 0 ) {
+            log.info( "Removed " + toRemove.size() + " connections that were bidirectional duplicates" );
+            log.info( "Before:" + this.size() );
+            this.removeAll( toRemove );
+            log.info( "After:" + this.size() );
+        }
         // this removes too many!
-        this.removeAll( toRemove );
     }
 
     public void removeSymetric( Connection removeMe, ConnectionsDocument doc ) {
@@ -127,7 +137,7 @@ public class ConnectionList extends LinkedList<Connection> {
 
     // TODO
     // public void containsDuplicates() {
-    //        
+    //
     // }
 
     public Connection findByPartners( Connection query, ConnectionsDocument doc ) {
@@ -166,6 +176,7 @@ public class ConnectionList extends LinkedList<Connection> {
 
     /**
      * Code reuse from findbypartners
+     * 
      * @param query
      * @param doc
      * @return

@@ -168,12 +168,22 @@ public class AirolaXMLGenerator {
 
                 Element sentenceElement = new Element( "sentence" );
                 // sentenceElement.setAttribute( "charOffset", start + "-" + end );
-                String sentenceStr = docString + ".s" + sentenceID;
-                sentenceElement.setAttribute( "id", sentenceStr );
+                String sentenceStrID = docString + ".s" + sentenceID;
+                sentenceElement.setAttribute( "id", sentenceStrID );
                 sentenceElement.setAttribute( "origId", sentence.getId() + "" );
-                sentenceElement.setAttribute( "text", doc.getAnnotationText( sentence ) );
+                String sentenceText = doc.getAnnotationText( sentence );
+                sentenceElement.setAttribute( "text", sentenceText );
                 // log.info( "sentenceStr:" + sentenceStr );
-                if ( fromEvaluations == null || fromEvaluations.acceptSentence( sentenceStr ) ) {
+                if ( fromEvaluations != null ) {
+                    if ( !sentenceText.equals( fromEvaluations.getSentenceText( sentenceStrID ) ) ) {
+                        log.info( "Error: sentenceID'd text does not match across evaluations and new corpus" );
+                        log.info( "Generated:" + sentenceText );
+                        log.info( "Evaluated:" + fromEvaluations.getSentenceText( sentenceStrID ) );
+                        System.exit( 1 );
+                    }
+                }
+
+                if ( fromEvaluations == null || fromEvaluations.acceptSentence( sentenceStrID ) ) {
                     docElement.addContent( sentenceElement );
                 }
 
@@ -188,19 +198,17 @@ public class AirolaXMLGenerator {
                 int entityID = 0;
                 Set<Annotation> badRegions = new HashSet<Annotation>();
                 for ( Annotation region : regionsSorted ) {
-                    String entityString = sentenceStr + ".e" + entityID;
+                    String entityString = sentenceStrID + ".e" + entityID;
                     Element entity = new Element( "entity" );
                     long entityStart = region.getStartNode().getOffset() - start;
                     long entityEnd = region.getEndNode().getOffset() - start;
                     entityEnd--;
                     if ( entityStart < 0 ) {
-                        log.warn( "Entity start less than zero:" + doc.getPMID() + "\n"
-                                + doc.getAnnotationText( sentence ) );
+                        log.warn( "Entity start less than zero:" + doc.getPMID() + "\n" + sentenceText );
                         entityStart = 0;
                     }
                     if ( entityEnd < 0 ) {
-                        log.warn( "Entity end less than zero:" + doc.getPMID() + "\n"
-                                + doc.getAnnotationText( sentence ) );
+                        log.warn( "Entity end less than zero:" + doc.getPMID() + "\n" + sentenceText );
                         badRegions.add( region );
                         // skip
                         continue;
@@ -272,7 +280,7 @@ public class AirolaXMLGenerator {
                         String aID = entityMap.get( anotA );
                         String bID = entityMap.get( anotB );
                         Element pair = new Element( "pair" );
-                        String pairStr = sentenceStr + ".p" + pairID;
+                        String pairStr = sentenceStrID + ".p" + pairID;
                         String interaction;
 
                         if ( connectionList.containsByPartners( new Connection( anotA, anotB ), undirected, doc )
@@ -289,9 +297,9 @@ public class AirolaXMLGenerator {
                         pair.setAttribute( "e1", aID );
                         pair.setAttribute( "e2", bID );
 
-//                        if ( fromEvaluations == null || fromEvaluations.usedPair( pairStr ) ) {
-                            sentenceElement.addContent( pair );
-//                        }
+                        // if ( fromEvaluations == null || fromEvaluations.usedPair( pairStr ) ) {
+                        sentenceElement.addContent( pair );
+                        // }
                         pairID++;
                     }
                 }// end pairs
@@ -307,7 +315,6 @@ public class AirolaXMLGenerator {
                 }
             }
             // if ( docID > 30 ) break;
-
         }
 
         log.info( "Total true interactions:" + totalTrueInteractions );
@@ -369,14 +376,14 @@ public class AirolaXMLGenerator {
         // AirolaXMLGenerator gen = new AirolaXMLGenerator( "WhiteTextNegFixTrain", "Suzanne" );
         // gen.run( gen.getTrainingCorp() );
 
-        // AirolaXMLGenerator gen = new AirolaXMLGenerator( "WhiteTextNegFixFullCountCheck", "Suzanne" );
-        // gen.run( gen.getCorp() );
+        AirolaXMLGenerator gen = new AirolaXMLGenerator( "WhiteTextNegFixFullCountCheck2", "Suzanne" );
+        gen.run( gen.getCorp() );
 
         // AirolaXMLGenerator gen = new AirolaXMLGenerator( "WhiteTextAnnotatedMalletRandom", "Mallet" );
         // gen.run( gen.getRandomCorp() );
 
-        AirolaXMLGenerator gen = new AirolaXMLGenerator( "WhiteTextUnseenMScan2", "Mallet" );
-        gen.run( gen.getUnseen() );
+        // AirolaXMLGenerator gen = new AirolaXMLGenerator( "WhiteTextUnseenMScan2", "Mallet" );
+        // gen.run( gen.getUnseen() );
 
         // extend abbreviations? - may mess up normalization
         // AirolaXMLGenerator gen = new AirolaXMLGenerator( "WhiteTextUnseenAbbrFix", "Mallet" );

@@ -27,12 +27,14 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import ubic.BAMSandAllen.Util;
 import ubic.basecode.dataStructure.StringToStringSetMap;
 import ubic.pubmedgate.Config;
 import ubic.pubmedgate.GateInterface;
 import ubic.pubmedgate.interactions.AirolaXMLGenerator;
 import ubic.pubmedgate.interactions.AirolaXMLReader;
 import ubic.pubmedgate.interactions.evaluation.AllCuratorsCombined;
+import ubic.pubmedgate.interactions.evaluation.AllUnseenEvaluationsCombined;
 import ubic.pubmedgate.interactions.evaluation.LoadInteractionSpreadsheet;
 
 public class AirolaForEvaluations {
@@ -54,40 +56,69 @@ public class AirolaForEvaluations {
         return result;
     }
 
-    public AirolaForEvaluations( AirolaXMLReader reader, LoadInteractionSpreadsheet sheet, boolean useAll )
-            throws Exception {
+    public String getSentenceText( String sentenceID ) {
+        return reader.getSentenceText( sentenceID );
+    }
+
+    public AirolaForEvaluations( AirolaXMLReader reader ) throws Exception {
+
+        AllUnseenEvaluationsCombined combinedUnseen = new AllUnseenEvaluationsCombined();
         abstractIDs = new HashSet<String>();
         sentenceIDs = new HashSet<String>();
         enitityIDs = new HashSet<String>();
         acceptedPairIDs = new HashSet<String>();
+        pairIDs = new HashSet<String>();
 
         // from the sheet get accepted and rejected pairID's
-        acceptedPairIDs = sheet.getAcceptedPairs();
+        acceptedPairIDs = combinedUnseen.getAllAcceptedPairs();
         log.info( "Accepted pairs:" + acceptedPairIDs.size() );
-        if ( useAll ) {
-            pairIDs = sheet.getAllPairs();
-        } else {
-            pairIDs = sheet.getAcceptedPairs();
-        }
+
+        Set<String> allEvaluatedPairs = combinedUnseen.getAllEvaluatedPairs();
+
+        // old code below, now we only use sentences that have been evaluated completley.
+        // if ( useAll ) {
+        // pairIDs = sheet.getAllPairs();
+        // } else {
+        // pairIDs = sheet.getAcceptedPairs();
+        // }
+
         this.reader = reader;
 
-        Map<String, String> pairIDToSentenceElementID = reader.getPairIDToSentenceElementID();
+        Map<String, Set<String>> sentenceToPairID = reader.getSentenceIDToPairs();
         Map<String, String> pairIDToAbstractElementID = reader.getPairIDToAbstractElementID();
         StringToStringSetMap sentenceIDToEntities = reader.getSentenceIDToEntities();
-        HashMap<String, Set<String>> pairIDToEntities = reader.getPairIDToEntities();
+        // Map<String, String> pairIDToSentenceElementID = reader.getPairIDToSentenceElementID();
+        // HashMap<String, Set<String>> pairIDToEntities = reader.getPairIDToEntities();
+        // iterate all sentences
+        // check to see if all pairs are evaluated
+        // if so keep
 
-        // get the associated entities, sentences and documents
-        for ( String pairID : pairIDs ) {
-            String abstractID = pairIDToAbstractElementID.get( pairID );
-            Set<String> entitiyIDforPair = pairIDToEntities.get( pairID );
-            String sentenceID = pairIDToSentenceElementID.get( pairID );
+        for ( String sentenceID : sentenceToPairID.keySet() ) {
+            Set<String> pairs = sentenceToPairID.get( sentenceID );
 
-            if ( entitiyIDforPair != null ) enitityIDs.addAll( entitiyIDforPair );
-            sentenceIDs.add( sentenceID );
-            abstractIDs.add( abstractID );
-            // log.info( "abstractID:" + abstractID );
-            // log.info( "sentenceIDs:" + sentenceID );
+            if ( pairs.size() == 0 ) continue;
+            String abstractID = pairIDToAbstractElementID.get( pairs.iterator().next() );
+
+            // iff every pair relation in that sentence was evaluated, then use it
+            if ( allEvaluatedPairs.containsAll( pairs ) ) {
+                sentenceIDs.add( sentenceID );
+                pairIDs.addAll( pairs );
+                abstractIDs.add( abstractID );
+            }
         }
+
+        // // get the associated entities, sentences and documents
+        // for ( String pairID : pairIDs ) {
+        // String abstractID = pairIDToAbstractElementID.get( pairID );
+        // Set<String> entitiyIDforPair = pairIDToEntities.get( pairID );
+        // String sentenceID = pairIDToSentenceElementID.get( pairID );
+        //
+        // if ( entitiyIDforPair != null ) enitityIDs.addAll( entitiyIDforPair );
+        // sentenceIDs.add( sentenceID );
+        // abstractIDs.add( abstractID );
+        // // log.info( "abstractID:" + abstractID );
+        // // log.info( "sentenceIDs:" + sentenceID );
+        // }
 
         // filter for sentences with two entities?
         int moreThanTwo = 0;
@@ -98,6 +129,7 @@ public class AirolaForEvaluations {
         }
         log.info( "Entities:" + enitityIDs.size() );
         log.info( "Pairs:" + pairIDs.size() );
+        log.info( "Accepted pairs:" + Util.intersectSize( pairIDs, acceptedPairIDs ) );
         log.info( "Sentences:" + sentenceIDs.size() );
         log.info( "Abstracts:" + abstractIDs.size() );
         log.info( "Sentences with more than two:" + moreThanTwo + " of " + sentenceIDs.size() );
@@ -134,11 +166,9 @@ public class AirolaForEvaluations {
 
     public static void main( String[] args ) throws Exception {
 
-        LoadInteractionSpreadsheet sheet = AllCuratorsCombined.getFinal2000Results();
-
         String corpName = "PubMedUnseenJCN";
         String annotationSet = "Mallet";
-        
+
         // use all sentences/pairs? or ignore negative markings
         boolean usePosAndNeg = false;
 
@@ -153,9 +183,8 @@ public class AirolaForEvaluations {
         String corpusFilename = Config.config.getString( "whitetext.iteractions.ppiBaseFolder" )
                 + "Corpora/Original-Modified/WhiteTextUnseen.orig.xml";
         AirolaXMLReader reader = new AirolaXMLReader( corpusFilename, p2g, annotationSet );
-        AirolaForEvaluations test = new AirolaForEvaluations( reader, sheet, usePosAndNeg );
+        AirolaForEvaluations test = new AirolaForEvaluations( reader );
         test.run( p2g, corpName );
-
     }
 
 }

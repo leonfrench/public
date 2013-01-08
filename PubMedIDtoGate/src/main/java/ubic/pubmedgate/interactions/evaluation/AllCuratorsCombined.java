@@ -224,6 +224,48 @@ public class AllCuratorsCombined {
         return allSpreadSheet;
     }
 
+    public static LoadInteractionSpreadsheet getFirst6000Results() throws Exception {
+        return get6000Results( "/evaluations for Recall/full 6000 set/All Combined.final.forLoading.xls" );
+    }
+
+    public static LoadInteractionSpreadsheet getSecond6000Results() throws Exception {
+        return get6000Results( "/evaluations for Recall/second 6000 set/All Combined.final.forLoading.xls" );
+    }
+
+    public static LoadInteractionSpreadsheet get6000Results( String path ) throws Exception {
+        SpreadSheetSchema schema = new ForRecallEvaluationSchema();
+
+        String allFile = Config.config.getString( "whitetext.iteractions.evaluations.folder" ) + path;
+
+        Set<Integer> allRows = new HashSet<Integer>();
+
+        for ( int i = 1; i < 6002; i++ ) {
+            allRows.add( i );
+        }
+
+        LoadInteractionSpreadsheet allSpreadSheet = new LoadInteractionSpreadsheet( allFile, allRows, "First6000",
+                schema );
+        return allSpreadSheet;
+    }
+
+    public static LoadInteractionSpreadsheet getNotInBAMSResults() throws Exception {
+        SpreadSheetSchema schema = new NotInBAMSSchema();
+
+        String allFile = Config.config.getString( "whitetext.iteractions.evaluations.folder" )
+                + "Not in BAMS/disagreement evaluations/NotInBAMSSortedCombined.Reviewed.for.paper.sorted.forLoading.xls";
+
+        Set<Integer> allRows = new HashSet<Integer>();
+
+        for ( int i = 1; i < 900; i++ ) {
+            allRows.add( i );
+        }
+
+        LoadInteractionSpreadsheet allSpreadSheet = new LoadInteractionSpreadsheet( allFile, allRows, "NotInBAMS",
+                schema );
+        return allSpreadSheet;
+    }
+
+
     public static void notInBAMS() throws Exception {
         AllCuratorsCombined curators = new AllCuratorsCombined();
         curators.loadNotInBAMSSet();
@@ -271,7 +313,12 @@ public class AllCuratorsCombined {
      * @param args
      */
     public static void main( String[] args ) throws Exception {
-        firstSet();
+        // firstSet();
+        LoadInteractionSpreadsheet x;
+        x = getNotInBAMSResults();
+        log.info( x.getAcceptedPairs().size() );
+        log.info( x.getAllPairs().size() );
+        log.info( x.getAcceptedPairs().iterator().next().toString() );
         // final2000();
         // notInBAMS();
     }

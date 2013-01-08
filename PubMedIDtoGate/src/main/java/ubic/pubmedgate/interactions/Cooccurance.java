@@ -51,9 +51,9 @@ public class Cooccurance {
         p2g = new GateInterface();
         // just the connection documents would be biased
         // docs = p2g.getConnectionDocuments();
-        docs = p2g.getTrainingDocuments();
-        // docs = p2g.getDocuments();
-        docs = p2g.getRandomSubsetDocuments();
+        // docs = p2g.getTrainingDocuments();
+        docs = p2g.getDocuments();
+        // docs = p2g.getRandomSubsetDocuments();
         log.info( "Documents:" + docs.size() );
 
         if ( sentenceLevel ) {
@@ -222,8 +222,9 @@ public class Cooccurance {
         // System.exit( 1 );
 
         ConnectionList manual = coc.getAnnotatedConnections( "Suzanne" );
+        log.info( "size:" + manual.size() );
 
-        // System.exit(1);
+        System.exit( 1 );
 
         IteractionEvaluator evaluator = new IteractionEvaluator();
 

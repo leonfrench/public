@@ -70,6 +70,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
 
 public class NormalizePairs {
     protected static Log log = LogFactory.getLog( NormalizePairs.class );
+    public static final String RAT = "species:ncbi:10116";
     ResolutionRDFModel resolveModel;
     RDFResolver resolver;
 
@@ -95,9 +96,7 @@ public class NormalizePairs {
         resolver.addMentionEditor( new DirectionRemoverMentionEditor() );
         resolver.addMentionEditor( new NucleusOfTheRemoverMentionEditor() );
         resolver.addMentionEditor( new DirectionRemoverMentionEditor() );
-        
-        
-        
+
     }
 
     /**
@@ -109,9 +108,8 @@ public class NormalizePairs {
     public NormalizeResult normalizePairsToMatrix( AirolaXMLReader reader, List<String> pairs, SLOutputReader SLReader,
             boolean writeOut, String name ) throws Exception {
         // dump out pairs to HTML
-        ShowSLErrors.writeExamples( reader, SLReader, pairs, Config.config
-                .getString( "whitetext.iteractions.results.folder" )
-                + name + ".html" );
+        ShowSLErrors.writeExamples( reader, SLReader, pairs,
+                Config.config.getString( "whitetext.iteractions.results.folder" ) + name + ".html" );
 
         // sort pairs by score (for AUC)
         pairs = SLReader.sortPairUsingScore( new LinkedList<String>( pairs ) );
@@ -123,13 +121,13 @@ public class NormalizePairs {
 
         Direction direction = Direction.ANYDIRECTION;
         boolean propigated = true;
-        DoubleMatrix<String, String> dataMatrix = getConnectionMatrix( propigated, direction );
+        DoubleMatrix<String, String> dataMatrix = getBAMSConnectionMatrix( propigated, direction );
 
         BAMSDataLoader bamsLoader = new BAMSDataLoader();
 
         List<String> connectionRegionNames = dataMatrix.getRowNames();
-        DoubleMatrix<String, String> predictedMatrix = new DenseDoubleMatrix<String, String>( connectionRegionNames
-                .size(), connectionRegionNames.size() );
+        DoubleMatrix<String, String> predictedMatrix = new DenseDoubleMatrix<String, String>(
+                connectionRegionNames.size(), connectionRegionNames.size() );
         predictedMatrix.setRowNames( connectionRegionNames );
         predictedMatrix.setColumnNames( connectionRegionNames );
 
@@ -220,7 +218,7 @@ public class NormalizePairs {
                                         predictedMatrix.setByKeys( resolvedB, resolvedA, currentValue );
                                         if ( dataMatrix.getByKeys( resolvedA, resolvedB ) == 1d ) {
                                             atLeast1Match = true;
-                                            positiveRanks.add( ( double ) ( resovledPairs.size()  ) );
+                                            positiveRanks.add( ( double ) ( resovledPairs.size() ) );
                                             inMatrix++;
                                         }
                                     }
@@ -282,7 +280,7 @@ public class NormalizePairs {
         return normResult;
     }
 
-    public static DoubleMatrix<String, String> getConnectionMatrix( boolean propigated, Direction direction )
+    public static DoubleMatrix<String, String> getBAMSConnectionMatrix( boolean propigated, Direction direction )
             throws IOException {
         StructureCatalogAnalyze forMatrix = new StructureCatalogAnalyze( new BrainRegionClassSelector() );
         String filename = "Propigated.rdf";
@@ -293,7 +291,7 @@ public class NormalizePairs {
         return dataMatrix;
     }
 
-    public static NormalizeResult analyseTest( boolean usePredictions, boolean eraTest, boolean runAll )
+    public static NormalizeResult analyseTest( boolean usePredictions, boolean eraTest, boolean runAll, String species )
             throws Exception {
         String testSet = "Annotated";
         String annotationSet = "Suzanne";
@@ -311,31 +309,39 @@ public class NormalizePairs {
         SLOutputReader SLReader = new SLOutputReader( new File( baseFolder ) );
 
         boolean doAll = false;
-        result = runNormalization( testSet, XMLReader, SLReader, doAll, usePredictions, eraTest );
+        result = runNormalization( testSet, XMLReader, SLReader, doAll, usePredictions, eraTest, species );
 
         if ( runAll ) {
-            result = runNormalization( testSet, XMLReader, SLReader, doAll, usePredictions, eraTest );
+            result = runNormalization( testSet, XMLReader, SLReader, doAll, usePredictions, eraTest, species );
         }
         return result;
     }
 
-    public static List<String> getRatPairs( AirolaXMLReader XMLReader, Collection<String> allPairs ) {
-        List<String> ratPairs = new LinkedList<String>();
+    // public static List<String> getspeciesPairs( AirolaXMLReader XMLReader, Collection<String> allPairs ) {
+    // return getSpeciesPairs( XMLReader, allPairs, "species:ncbi:10116" );
+    // }
+
+    public static List<String> getSpeciesPairs( AirolaXMLReader XMLReader, Collection<String> allPairs,
+            String speciesNCBIID ) {
+        StopWatch s = new StopWatch();
+        s.start();
+        List<String> speciesSpecificPairs = new LinkedList<String>();
         int count = 0;
         for ( String pair : allPairs ) {
-            if ( count++ % 1000 == 0 ) log.info( "Getting rat pairs:" + count );
+            if ( count++ % 1000 == 0 ) log.info( "Getting species pairs:" + count );
             ConnectionsDocument doc = XMLReader.getDocumentFromPairID( pair );
             Set<String> species = doc.getLinnaeusSpecies();
-            if ( species.contains( "species:ncbi:10116" ) ) { // rats
-                ratPairs.add( pair );
+            if ( species.contains( speciesNCBIID ) ) { // rats
+                speciesSpecificPairs.add( pair );
             }
         }
-        return ratPairs;
+        log.info( "Getting species pairs took:" + s.toString() );
+        return speciesSpecificPairs;
     }
 
-    public static NormalizeResult runUnseen( boolean eraTest, boolean runAll, boolean notInBAMS, String testSet )
-            throws Exception {
-        
+    public static NormalizeResult runUnseen( boolean eraTest, boolean runAll, boolean notInBAMS, String testSet,
+            String species ) throws Exception {
+
         String trainingSet = "WhiteTextNegFixFull";
         // String testSet = "WhiteTextUnseen";
         String annotationSet = "Mallet";
@@ -349,40 +355,42 @@ public class NormalizePairs {
 
         p2g.setNamedCorpNull( "PubMedUnseenJNChem" );
         p2g.setNamedCorpNull( "PubMedUnseenJCN" );
-        p2g.setNamedCorpNull("PubMedUnseenMScan1");
+        p2g.setNamedCorpNull( "PubMedUnseenMScan1" );
 
-        
         AirolaXMLReader XMLReader = new AirolaXMLReader( filename, p2g, annotationSet );
         SLOutputReader SLReader = new SLOutputReader( trainingSet, testSet, baseFolder );
 
         boolean predictions = true;
         boolean doAll = false;
-        NormalizeResult result = runNormalization( testSet, XMLReader, SLReader, doAll, predictions, eraTest, notInBAMS );
+        NormalizeResult result = runNormalization( testSet, XMLReader, SLReader, doAll, predictions, eraTest,
+                notInBAMS, species );
 
         if ( runAll ) {
             // Era test turned off!
             eraTest = false;
-            runNormalization( testSet, XMLReader, SLReader, runAll, predictions, eraTest );
+            runNormalization( testSet, XMLReader, SLReader, runAll, predictions, eraTest, species );
         }
 
         return result;
     }
 
     private static NormalizeResult runNormalization( String testSet, AirolaXMLReader XMLReader,
-            SLOutputReader SLReader, boolean doAll, boolean usePredictions ) throws Exception {
+            SLOutputReader SLReader, boolean doAll, boolean usePredictions, String speciesID ) throws Exception {
         boolean year1987Split = false;
-        return runNormalization( testSet, XMLReader, SLReader, doAll, usePredictions, year1987Split );
+        return runNormalization( testSet, XMLReader, SLReader, doAll, usePredictions, year1987Split, speciesID );
     }
 
     private static NormalizeResult runNormalization( String testSet, AirolaXMLReader XMLReader,
-            SLOutputReader SLReader, boolean doAll, boolean usePredictions, boolean year1987Split ) throws Exception {
-        boolean notInBAMS = false;
-        return runNormalization( testSet, XMLReader, SLReader, doAll, usePredictions, year1987Split, notInBAMS );
-    }
-
-    private static NormalizeResult runNormalization( String testSet, AirolaXMLReader XMLReader,
-            SLOutputReader SLReader, boolean doAll, boolean usePredictions, boolean year1987Split, boolean notInBAMS )
+            SLOutputReader SLReader, boolean doAll, boolean usePredictions, boolean year1987Split, String speciesID )
             throws Exception {
+        boolean notInBAMS = false;
+        return runNormalization( testSet, XMLReader, SLReader, doAll, usePredictions, year1987Split, notInBAMS,
+                speciesID );
+    }
+
+    private static NormalizeResult runNormalization( String testSet, AirolaXMLReader XMLReader,
+            SLOutputReader SLReader, boolean doAll, boolean usePredictions, boolean year1987Split, boolean notInBAMS,
+            String speciesID ) throws Exception {
         Map<String, String> results;
         boolean writeOut = true;
         if ( doAll ) testSet += ".all";
@@ -410,10 +418,10 @@ public class NormalizePairs {
         NormalizeResult normResult = null;
 
         if ( notInBAMS ) {
-            List<String> ratPairs = getRatPairs( XMLReader, SLReader.getAll() );
-            // negatives.retainAll( ratPairs );
-            log.info( "Retaining rat pairs:" + ratPairs.size() );
-            positives.retainAll( ratPairs );
+            List<String> speciesPairs = getSpeciesPairs( XMLReader, SLReader.getAll(), speciesID );
+            // negatives.retainAll( speciesPairs );
+            log.info( "Retaining species pairs:" + speciesPairs.size() );
+            positives.retainAll( speciesPairs );
             // normalize
             name = "NotInBAMS.rat.positives";
             normResult = normPairs.normalizePairsToMatrix( XMLReader, positives, SLReader, writeOut, name );
@@ -423,10 +431,10 @@ public class NormalizePairs {
             int yearSplit1 = 1986;
             int yearSplit2 = 2001;
             log.info( "Doing year based split" );
-            List<String> ratPairs = getRatPairs( XMLReader, SLReader.getAll() );
-            // negatives.retainAll( ratPairs );
-            log.info( "Retaining rat pairs" );
-            positives.retainAll( ratPairs );
+            List<String> speciesPairs = getSpeciesPairs( XMLReader, SLReader.getAll(), speciesID );
+            // negatives.retainAll( speciesPairs );
+            log.info( "Retaining species pairs" );
+            positives.retainAll( speciesPairs );
             log.info( "Done retaining rat pairs" );
 
             // split rat positives into years
@@ -487,9 +495,9 @@ public class NormalizePairs {
             keeper.addParamInstance( results );
 
             // filter rats
-            List<String> ratPairs = getRatPairs( XMLReader, SLReader.getAll() );
-            negatives.retainAll( ratPairs );
-            positives.retainAll( ratPairs );
+            List<String> speciesPairs = getSpeciesPairs( XMLReader, SLReader.getAll(), speciesID );
+            negatives.retainAll( speciesPairs );
+            positives.retainAll( speciesPairs );
 
             name = "Positives.rat." + testSet;
             normResult = normPairs.normalizePairsToMatrix( XMLReader, positives, SLReader, writeOut, name );
@@ -505,10 +513,10 @@ public class NormalizePairs {
             results = normPairs.normalizePairsToMatrix( XMLReader, SLReader.getAll(), SLReader, writeOut, name ).statisticMap;
             keeper.addParamInstance( results );
 
-            List<String> ratPairs = getRatPairs( XMLReader, SLReader.getAll() );
+            List<String> speciesPairs = getSpeciesPairs( XMLReader, SLReader.getAll(), speciesID );
             name = "all.rat" + testSet;
 
-            results = normPairs.normalizePairsToMatrix( XMLReader, ratPairs, SLReader, writeOut, name ).statisticMap;
+            results = normPairs.normalizePairsToMatrix( XMLReader, speciesPairs, SLReader, writeOut, name ).statisticMap;
 
             keeper.addParamInstance( results );
         }
@@ -528,10 +536,10 @@ public class NormalizePairs {
         boolean eraTest = false; // test for 1987 etc eras
         boolean runAll = true; // also run on both positive and negatives combined
         boolean notInBAMS = false;
-        // analyseTest( usePredictions, eraTest, runAll );
+        // analyseTest( usePredictions, eraTest, runAll, NormalizePairs.RAT );
         // String testSet = "WhiteTextUnseen";
         String testSet = "WhiteTextUnseenMScan2";
-        
-        runUnseen( eraTest, runAll, notInBAMS, testSet );
+
+        runUnseen( eraTest, runAll, notInBAMS, testSet, RAT );
     }
 }

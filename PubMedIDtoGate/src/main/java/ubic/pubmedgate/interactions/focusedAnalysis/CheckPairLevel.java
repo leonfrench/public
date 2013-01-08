@@ -33,7 +33,7 @@ public class CheckPairLevel {
     public static void getPairDepthForBAMS( boolean propigated ) throws Exception {
         Direction direction = Direction.ANYDIRECTION;
 
-        DoubleMatrix<String, String> dataMatrix = NormalizePairs.getConnectionMatrix( propigated, direction );
+        DoubleMatrix<String, String> dataMatrix = NormalizePairs.getBAMSConnectionMatrix( propigated, direction );
 
         BAMSDataLoader bamsLoader = new BAMSDataLoader();
 

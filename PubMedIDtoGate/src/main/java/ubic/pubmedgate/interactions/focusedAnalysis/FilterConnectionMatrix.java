@@ -32,6 +32,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import ubic.BAMSandAllen.ABAMSDataMatrix;
+import ubic.BAMSandAllen.RegressionVector;
 import ubic.BAMSandAllen.Util;
 import ubic.BAMSandAllen.AnalyzeBAMSandAllenGenes.Direction;
 import ubic.BAMSandAllen.BAMSDataLoaders.BAMSDataLoader;
@@ -47,8 +48,9 @@ import ubic.basecode.io.reader.DoubleMatrixReader;
 import ubic.pubmedgate.Config;
 import ubic.pubmedgate.interactions.NormalizePairs;
 
+
 /**
- * Propigates, fitlers and analyizes literature based connectivity matrices.
+ * Propigates, filters and analyizes literature based connectivity matrices.
  * 
  * @author leon
  */
@@ -91,7 +93,7 @@ public class FilterConnectionMatrix {
     public Map<String, String> compareToReal( boolean propigated, double threshold ) throws Exception {
         Map<String, String> results = new HashMap<String, String>();
 
-        DoubleMatrix<String, String> BAMSconnectionMatrix = NormalizePairs.getConnectionMatrix( propigated, direction );
+        DoubleMatrix<String, String> BAMSconnectionMatrix = NormalizePairs.getBAMSConnectionMatrix( propigated, direction );
 
         int totalDepth = 0;
         int BAMStotalDepth = 0;
@@ -307,7 +309,7 @@ public class FilterConnectionMatrix {
     public static void makepropigates( String folder ) throws Exception {
         File folderF = new File( folder );
         for ( String f : folderF.list() ) {
-            if ( f.endsWith( "WhiteTextUnseenMScan.predictions.matrix.txt" ) ) {
+            if ( f.endsWith( ".matrix.txt" ) ) {
                 String filename = folder + "/" + f.toString();
                 log.info( folder );
                 FilterConnectionMatrix test = new FilterConnectionMatrix( filename );
@@ -373,7 +375,7 @@ public class FilterConnectionMatrix {
     public void degreeTest( double threshold ) throws Exception {
         boolean propigated = true;
         Direction direction = Direction.ANYDIRECTION;
-        DoubleMatrix<String, String> BAMSconnectionMatrix = NormalizePairs.getConnectionMatrix( propigated, direction );
+        DoubleMatrix<String, String> BAMSconnectionMatrix = NormalizePairs.getBAMSConnectionMatrix( propigated, direction );
 
         DoubleMatrix<String, String> connectionMatrixForUse = threshold( threshold );
 
@@ -384,9 +386,15 @@ public class FilterConnectionMatrix {
         ABAMSDataMatrix literatureConnections = new ABAMSDataMatrix( connectionMatrixForUse,
                 "LiteratureConnectionMatrix", new CorrelationAdjacency( connectionMatrixForUse ) );
         literatureConnections = literatureConnections.removeZeroColumns();
+        
+        log.info( "Literature non-zero regions:" + literatureConnections.columns() );
 
         MatrixPair pair = new SimpleMatrixPair( BAMSConnection, literatureConnections );
         pair.sameSpace();
+        pair.printDimensions();
+        pair.switchMatrices();
+        pair.sameSpace();
+        pair.slimMatrices();
         pair.printDimensions();
 
         if ( !BAMSconnectionMatrix.getColNames().equals( connectionMatrixForUse.getColNames() ) )
@@ -398,17 +406,37 @@ public class FilterConnectionMatrix {
         log.info( "Degree, pearson:" + pair.getFlattenedCorrelation( !spearman ) );
         log.info( "Mantel (shared connections):" + pair.getCorrelation( true ) );
 
+        boolean removeNan = true;
+
+        DoubleMatrix<String, String> matrixASums = Util.columnSums( pair.getMatrixA(), removeNan );
+        DoubleMatrix<String, String> matrixBSums = Util.columnSums( pair.getMatrixB(), removeNan );
+
+        DoubleMatrix<String, String> matrixForR = new DenseDoubleMatrix<String, String>( 2, matrixASums.columns() );
+
+        // RegressionVector vector = new RegressionVector( 2, matrixASums.columns(), false );
+        matrixForR.setColumnNames( pair.getMatrixB().getColNames() );
+        matrixForR.addRowName( pair.getMatrixA().getName() );
+        matrixForR.addRowName( pair.getMatrixB().getName() );
+        for ( int i = 0; i < matrixForR.columns(); i++ ) {
+            matrixForR.set( 0, i, matrixASums.get( 0, i ) );
+            matrixForR.set( 1, i, matrixBSums.get( 0, i ) );
+        }
+        log.info( "Writing table" );
+        Util.writeRTable( "/grp/java/workspace/PubMedIDtoGate/spreadsheets/interaction.results/degreeSequence.rat.txt",
+                matrixForR );
+
     }
 
     public static void testDegree() throws Exception {
         // tests all columns
         String base = "/grp/java/workspace/PubMedIDtoGate/spreadsheets/interaction.results/matrices/";
         String filename = base;
-        // filename += "Positives.WhiteTextUnseen.matrix.txt.propigated";
-        filename += "Positives.rat.WhiteTextUnseen.matrix.txt.propigated";
+//         filename += "Positives.WhiteTextUnseen.matrix.txt.propigated";
+        filename += "all.ratWhiteTextUnseen.all.matrix.txt.propigated";
+//        filename += "Positives.rat.WhiteTextUnseen.matrix.txt.propigated";
 
         FilterConnectionMatrix matrix = new FilterConnectionMatrix( filename );
-        double threshold = 2;
+        double threshold = 1;
         matrix.degreeTest( threshold );
     }
 
@@ -421,18 +449,19 @@ public class FilterConnectionMatrix {
     }
 
     public static void main( String[] args ) throws Exception {
+        makepropigates( "/home/lfrench/WhiteText/spreadsheets/interaction.results/species specific" );
+        System.exit(1);
+        
 
         String filename;
         ParamKeeper keeper = new ParamKeeper();
         String folder = Config.config.getString( "whitetext.iteractions.matricesFolder" );
 
-        makepropigates( folder );
+        // makepropigates( folder );
+        testDegree();
         System.exit( 1 );
 
         // TODO add in degree correlation statistics
-
-        // testDegree();
-        // System.exit( 1 );
 
         // quickTest( "Positives.WhiteTextUnseen.matrix.txt", "Negatives.WhiteTextUnseen.matrix.txt" );
 
@@ -445,7 +474,6 @@ public class FilterConnectionMatrix {
         // quickTest( "Positives.rat.Annotated.matrix.txt", "Negatives.rat.Annotated.matrix.txt" );
         // quickTest( "Positives.Annotated.matrix.txt", "Negatives.Annotated.matrix.txt" );
         System.exit( 1 );
-
 
         // String endfix = "matrix.txt";
         // String endfix = "all.ratWhiteTextUnseen.all.matrix.txt";

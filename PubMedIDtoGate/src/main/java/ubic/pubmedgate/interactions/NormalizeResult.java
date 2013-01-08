@@ -26,6 +26,7 @@ import ubic.pubmedgate.interactions.evaluation.NormalizedConnection;
 
 public class NormalizeResult {
     public Map<String, String> statisticMap;
+
     // a triple - two regions and a pairID
     // pairID -> two regions
     public Set<NormalizedConnection> normalizedPairs;
