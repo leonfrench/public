@@ -51,7 +51,7 @@ public class RecallCuratorsCombined {
         // 4002-5001, Tianna and Olivia
         // 5002-6001, Tianna and Luchia
         String baseFolder = Config.config.getString( "whitetext.iteractions.evaluations.folder" )
-                + "evaluations for Recall/full 6000 set/";
+                + "evaluations for Recall/second 6000 set/";
 
         Set<Integer> rows = new HashSet<Integer>();
 
@@ -166,11 +166,12 @@ public class RecallCuratorsCombined {
         combined.printAllStats();
         System.out.println();
 
+        
         // combined.retainPairs( pairs )
 
         combined.printDisagreements( "Accept" );
 
-        splitBySentences();
+//        splitBySentences();
     }
 
     public static void splitBySentences() throws Exception {
